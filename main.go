@@ -1,7 +1,9 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +13,14 @@ var Clients []*Client
 
 func main() {
 
+	// Determine port for HTTP service.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("defaulting to port %s", port)
+	}
+	println(port)
+
 	server := Server{
 		Register: make(chan *Client),
 		Remove:   make(chan *Client),
@@ -19,7 +29,7 @@ func main() {
 	go server.Handle()
 	wshandler := EchoServer{Server: &server}
 	http.Handle("/ws/", wshandler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+port, nil)
 }
 
 // Server representing the single point fo failure for handling client registration
