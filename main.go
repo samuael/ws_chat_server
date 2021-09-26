@@ -17,7 +17,7 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		log.Printf("defaulting to port %s", port)
+		log.Printf("defaulting to PORT %s", port)
 	}
 	broadcast := &BroadcastChat{
 		LastMessageNumber: 1,
@@ -80,20 +80,10 @@ func (server *Server) Handle() {
 		case uniqueAddress := <-server.Remove:
 			{
 				server.UnRegisterClient(uniqueAddress.ID, uniqueAddress.IP)
-				// for i, cl := range Clients {
-				// 	if cl.ID == client.ID {
-				// 		if i == 0 {
-				// 			Clients = Clients[0:]
-				// 		} else {
-				// 			Clients = append(Clients[0:i], Clients[i+1:]...)
-				// 		}
-				// 		break
-				// 	}
-				// }
 			}
 		case <-ticker.C:
 			{
-				println(len(Clients))
+				log.Println(len(Clients))
 			}
 		}
 	}
@@ -105,7 +95,7 @@ func (server *Server) SendMessage(message *XChangeMessage) {
 	defer func() {
 		message := recover()
 		if message != nil {
-			println(message.(string))
+			log.Println(" HERE : ", message.(string))
 		}
 	}()
 	for _, client := range Clients {
@@ -121,9 +111,7 @@ func (server *Server) SendMessage(message *XChangeMessage) {
 			for _, device := range client.Devices {
 				// This device instance is a pointer to the device in the list of the Devices in the client.
 				device.Message <- outMessage
-				time.Sleep(time.Millisecond * 100)
 			}
-
 			if message.Type == EndToEndClientMessage {
 				break
 			}
@@ -138,7 +126,7 @@ func (server *Server) RegisterClient(client *Client) {
 	// if so append the device in teh client devices list else use this newly generated client instance.
 	if clnt := Clients[client.ID]; clnt != nil {
 		// Loop Over each clients device and add it to the priviously created Client instance Devices List.
-		for ip, device := range clnt.Devices {
+		for ip, device := range client.Devices {
 			// Add the new device to the list of devices attached with this client object.
 			clnt.Devices[ip] = device
 		}
@@ -149,16 +137,24 @@ func (server *Server) RegisterClient(client *Client) {
 
 }
 
+// UnRegisterClient is a function to remove a client from the cached list of clients.
+// This funciton takes an argument of client's ID and clients IP address.
+// ID to identify the client object and IP to identify the Device of the client.
 func (server *Server) UnRegisterClient(ID, IP string) {
 	// When we want to unregister the client we need to pass this two parameters to the server inside the UniqueAddress instance with the Unregister
 	// channel and the main server filters the client object with this id and a device with thsi id to delete the device if there are
 	// a number of active devices connected using this id. but , if the number of connected devices is only one , then the client object will be deleted too.
 	if client := Clients[ID]; client != nil && len(client.Devices) > 1 {
-		// If the Length of the Clients is greater than 1 meaning there is other devices are too connected with this client account
+		// If the Length of the Clients is greater than 1 meaning there is other devices that are too connected with this client account
 		// then , delete that specified client Device from the devices list.
+		if client.Devices != nil && client.Devices[IP] != nil && client.Devices[IP].Conn != nil {
+			client.Devices[IP].Conn.Close()
+		}
 		delete(client.Devices, IP)
 	} else if client != nil && len(client.Devices) <= 1 {
 		// since teh length of device is 1 or less unregistering that device is also Unregistering the clinet instance.
-		delete(Clients, ID)
+		if len(client.Devices) == 0 && (len(client.Devices) == 1 && client.Devices[IP] != nil) {
+			delete(Clients, ID)
+		}
 	}
 }

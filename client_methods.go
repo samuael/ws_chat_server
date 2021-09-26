@@ -10,10 +10,14 @@ import (
 // the socket connection between the client and the server is closed.
 func (client *Client) ReadMessage(IP string) {
 	defer func() {
-		client.Devices[IP].Conn.Close()
-		client.Server.Remove <- UniqueAddress{IP: IP, ID: client.ID}
-		// message := recover()
-		// println(message)
+		if client.Devices[IP].Conn != nil {
+			client.Devices[IP].Conn.Close()
+			client.Server.Remove <- UniqueAddress{IP: IP, ID: client.ID}
+		}
+		message := recover()
+		if message != nil {
+			println("Write ", IP, string(MarshalThis(message)))
+		}
 	}()
 	// This is the packages message ...
 	// SetReadLimit sets the maximum size in bytes for a message read from the peer.
@@ -30,7 +34,12 @@ func (client *Client) ReadMessage(IP string) {
 			// Main service will close teh closed connection and let the rest.
 			return nil
 		})
-	// client.Conns[key].Conn.SetReadDeadline(time.Now().Add(pongWait))
+	/*
+		Using this method below named SetReadDeadLine you  can set the maximum time to wait before the next message arrives or sent.
+		the diration is set using the pong wait variable.
+	*/
+	// client.Devices[IP].Conn.SetReadDeadline(time.Now().Add(pongWait))
+
 	client.Devices[IP].Conn.SetPongHandler(func(string) error { /*client.Conns[key].Conn.SetReadDeadline(time.Now().Add(pongWait)); */ return nil })
 	for {
 		// This slice of byte is used to get a message from the socket connection.
@@ -62,7 +71,7 @@ func (client *Client) ReadMessage(IP string) {
 				message.Body = &body
 				message.Type = EndToEndClientMessage
 
-				serverMessage.Body = &ClientEchoMessage{Message: "\nYou Said\"" + body.Message + "\""}
+				serverMessage.Body = &ClientEchoMessage{Message: "\nYou Said '" + body.Message + "'"}
 				serverMessage.Type = EndToEndServerReply
 				client.Server.Message <- message
 				time.Sleep(time.Second * 1)
@@ -95,26 +104,13 @@ func (client *Client) ReadMessage(IP string) {
 				time.Sleep(time.Millisecond * 30)
 			}
 		} else if message.Type == BroadcastStopTypingMessage || message.Type == BroadcastTypingMessage {
-			if typerID := func() (msg string) {
-				// Casting the message from client input is needed to be implemented this way because the clients may send un invalid for message and if error happens
-				// in this go ruting due to that message the go routine may return with an excption.
-				// threfore, checking errors this way is the best way to prevent such casting errors.
-				msg = ""
-				defer func() {
-					// recover incase an exception happened.
-					recover()
-				}()
-				return message.Body.(map[string]interface{})["id"].(string)
-			}(); typerID != "" {
-				// Check whether the client is active of not.
-				if client := Clients[typerID]; client != nil {
-					// Instantiating the Broadcast Typign message and pass it to the Xcahnge message..
-					body := &BroadcastTyping{Username: client.Username, ID: client.ID}
-					message.Body = body
-					//
-					client.Server.Message <- message
-					time.Sleep(time.Millisecond * 30)
-				}
+			// Check whether the client is active of not.
+			if client := Clients[client.ID]; client != nil {
+				// Instantiating the Broadcast Typign message and pass it to the Xcahnge message..
+				body := &BroadcastTyping{Username: client.Username, ID: client.ID}
+				message.Body = body
+				client.Server.Message <- message
+				time.Sleep(time.Millisecond * 30)
 			}
 		}
 	}
@@ -123,13 +119,13 @@ func (client *Client) ReadMessage(IP string) {
 func (client *Client) WriteMessage(IP string) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer func() {
-		// --
-		println("Leaving connection ... ")
-		client.Devices[IP].Conn.Close()
+		if client.Devices[IP] != nil && client.Devices[IP].Conn != nil {
+			client.Devices[IP].Conn.Close()
+		}
 		client.Server.Remove <- UniqueAddress{IP: IP, ID: client.ID}
 		message := recover()
 		if message != nil {
-			println(string(MarshalThis(message)))
+			println("Write ", IP, string(MarshalThis(message)))
 		}
 	}()
 	// Continuously running loop for checking the connection and a

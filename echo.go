@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -54,7 +55,7 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		id = GenerateRandomString(5)
 	}
 	if username == "" {
-		username = "UNKNOWN"
+		username = "Unknown"
 	}
 	// This may be the IP ADDRESS , MAC ADDRESS , or other Device Uniquely identifying number
 	// in this case i have used randomly generated String.
@@ -76,7 +77,7 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 	go client.WriteMessage(ip)
 	time.Sleep(time.Millisecond * 200)
 	serverMessage := &XChangeMessage{}
-	xchangebody := &ServerEchoMessage{Message: "Hi Client!\nWelcome To echo chat!\n"}
+	xchangebody := &ServerEchoMessage{Message: "Hi " + strings.Title(username) + "!\nWelcome To echo chat!\n"}
 	xchangebody.ClientID = client.ID
 	serverMessage.Type = EndToEndServerReply
 	serverMessage.SenderID = client.ID

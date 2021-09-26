@@ -4,8 +4,8 @@ import (
 	"net/http"
 )
 
-// BroadcastChat ...
-// A centrac repo for holding the list of messages that are broadcasted.
+// BroadcastChat a central repo for holding the list of messages that are to be broadcasted.
+// and, Holding list of clients that are active users of the broadcast message.
 type BroadcastChat struct {
 	// Messages holds a list of messages that are passed transffered between the clients.
 	Messages []BroadcastMessage
