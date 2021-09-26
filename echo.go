@@ -9,21 +9,18 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type EchoServer struct {
-	Server *Server
-}
-
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
+// seededRand ...
 var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
 // GenerateRandomString  function
 func GenerateRandomString(length int) string {
-	charset := "1234567890"
+	charset := "1234567890abcdefhijklmnopqrstuvwxyz"
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[seededRand.Intn(len("charset"))]
@@ -40,7 +37,10 @@ func MarshalThis(inter interface{}) []byte {
 	return val
 }
 
-func (echoserver EchoServer) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+// ServeHTTP a handler function to create a socket connection with the client and to create a Client instance
+// which holds the socket client connection  instance and thre related information related to the client it may be either a username an ID
+// or IP address and related information.
+func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	conn, er := upgrader.Upgrade(response, request, nil)
 	if er != nil {
 		println("Error Upgrading Web Socket ")
@@ -49,24 +49,43 @@ func (echoserver EchoServer) ServeHTTP(response http.ResponseWriter, request *ht
 	username := request.FormValue("username")
 	// Generates a random string containing inters with length 5
 	// for identifying the client.
-	id := GenerateRandomString(5)
-	username = username + id
+	id := request.FormValue("id")
+	if er != nil {
+		id = GenerateRandomString(5)
+	}
+	if username == "" {
+		username = "UNKNOWN"
+	}
+	// This may be the IP ADDRESS , MAC ADDRESS , or other Device Uniquely identifying number
+	// in this case i have used randomly generated String.
+	ip := GenerateRandomString(5)
+	device := &Device{
+		Conn:    conn,
+		IP:      ip,
+		Message: make(chan *OutMessage)}
 	client := &Client{
 		Username: username,
 		ID:       id,
-		Conn:     conn,
-		Message:  make(chan []byte),
-		Server:   echoserver.Server,
+		// Conn:     conn,
+		// Message:  make(chan *OutMessage),
+		Devices: map[string]*Device{ip: device},
+		Server:  server,
 	}
+	server.Register <- client
+	go client.ReadMessage(ip)
+	go client.WriteMessage(ip)
+	time.Sleep(time.Millisecond * 200)
+	serverMessage := &XChangeMessage{}
+	xchangebody := &ServerEchoMessage{Message: "Hi Client!\nWelcome To echo chat!\n"}
+	xchangebody.ClientID = client.ID
+	serverMessage.Type = EndToEndServerReply
+	serverMessage.SenderID = client.ID
+	serverMessage.Body = xchangebody
 
-	println("Registering Clinet ")
-	echoserver.Server.Register <- client
-	// ---------------------------------------
-	println("Running client methods ....")
-	go client.ReadMessage()
-	go client.WriteMessage()
-	time.Sleep(time.Second * 2)
-	client.Message <- []byte("ee:" + " Hi Client \nHow are you ?\n I am the server!\nLet's Talk\n")
-	time.Sleep(time.Second * 1)
-	client.Message <- []byte("\nhi\n")
+	time.Sleep(time.Millisecond * 200)
+	// This message is to be seen by the newly connected device of the client
+	// but, other devices of the connected devices will not receive this message.
+	device.Message <- &OutMessage{
+		Body: MarshalThis(serverMessage),
+	}
 }
