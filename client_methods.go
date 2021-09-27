@@ -56,6 +56,7 @@ func (client *Client) ReadMessage(IP string) {
 			continue
 		}
 		message.SenderID = client.ID
+
 		if message.Type == EndToEndClientMessage {
 			serverMessage := &XChangeMessage{}
 			serverMessage.SenderID = client.ID
@@ -71,7 +72,8 @@ func (client *Client) ReadMessage(IP string) {
 				message.Body = &body
 				message.Type = EndToEndClientMessage
 
-				serverMessage.Body = &ClientEchoMessage{Message: "\nYou Said '" + body.Message + "'"}
+				// Here I am Sending the client with the server echo message .
+				serverMessage.Body = &ServerEchoMessage{ClientID: client.ID, Message: "\nYou Said '" + body.Message + "'"}
 				serverMessage.Type = EndToEndServerReply
 				client.Server.Message <- message
 				time.Sleep(time.Second * 1)

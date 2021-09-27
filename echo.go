@@ -75,9 +75,13 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 	server.Register <- client
 	go client.ReadMessage(ip)
 	go client.WriteMessage(ip)
+
 	time.Sleep(time.Millisecond * 200)
+	// serverMessage
 	serverMessage := &XChangeMessage{}
 	xchangebody := &ServerEchoMessage{Message: "Hi " + strings.Title(username) + "!\nWelcome To echo chat!\n"}
+	// Here I am Sending the client "id" with the first message of the server so that the client will be aware of his/her ID  even if the Client ID
+	// not created by the client ( Because  , In this case the client "id" can be  passed by the client in the request parameter ).
 	xchangebody.ClientID = client.ID
 	serverMessage.Type = EndToEndServerReply
 	serverMessage.SenderID = client.ID

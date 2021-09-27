@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
 var Clients map[string]*Client
@@ -53,9 +52,13 @@ type Server struct {
 //
 func (server *Server) Handle() {
 	// Use this ticker if you want to check any thing related this server and it connectins.
-	ticker := time.NewTicker(time.Second * 10)
+	// ticker := time.NewTicker(time.Second * 10)
 	defer func() {
-		ticker.Stop()
+		// ticker.Stop()
+		recover()
+		// Recover from faults or closing of this thread by errors .
+		// The only thing that has to stop this thread is KILL SIGNAL.
+		go server.Handle()
 	}()
 	/*
 		Handling all the data access (especially, any updates or non retrival requests) are always has to be handled through this
@@ -81,10 +84,9 @@ func (server *Server) Handle() {
 			{
 				server.UnRegisterClient(uniqueAddress.ID, uniqueAddress.IP)
 			}
-		case <-ticker.C:
-			{
+			/* case <-ticker.C: 	{
 				log.Println(len(Clients))
-			}
+			} */
 		}
 	}
 }

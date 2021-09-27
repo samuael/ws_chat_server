@@ -7,11 +7,16 @@ import (
 )
 
 const (
+	// This one of the type codes that areto be used by the web socket application to distinguish what type of message is in the message body.
+
 	EndToEndClientMessage      = iota + 1
 	EndToEndServerReply        // This status code represents the server reply(echo) to end to end message of the client.
 	BroadcastMessageType       // This status code represents the client message for a group.
 	BroadcastTypingMessage     // This status code represents the Typing Message including the typer ID
 	BroadcastStopTypingMessage // This status code represents the Stop Typing Message which also holds the ID of the typing user
+	// NotifyingYourID .. this status code is Used only for this application this is not a nessasary way to implement REST type request responses in this way.
+	// But , that sake of show on how to extend the application requests for other web socket message types i happened to use this technique.
+	NotifyingYourID // This status code signifies what your ID ( either assigned by you or by the server )
 )
 const (
 	// writeWait Time allowed to write a message to the peer.
@@ -40,13 +45,24 @@ type XChangeMessage struct {
 // When the Type (Status ) code of XChangeMessage is BroadcastMessageType==3 ,
 //  then the body will be an instance of this struct.
 type BroadcastMessage struct {
+	No       int       `bson:"no"  	  json:"no"`
 	ID       string    `bson:"_id"  	  json:"id"`
 	Username string    `bson:"username"  json:"username"`
 	Message  string    `bson:"msg"  	  json:"msg"`
 	Time     time.Time `bson:"time"  	  json:"time"`
-	No       int       `bson:"no"  	  json:"no"`
 }
 
+/*
+{
+	"no"      : 5 ,
+	"id"      : "",
+	"username": "",
+	"msg"     : "",
+	"time"    : "",
+}
+
+
+*/
 // BroadcastTyping  .. this struct holds information such as Typing or stop typing message.
 // The Status Message will define  the body and if the type (status) code is typing message ,then the  body will be an instance
 // of this struct.
@@ -59,6 +75,15 @@ type BroadcastTyping struct {
 	Username string `json:"username,omitempty"`
 	ID       string `json:"id"`
 }
+
+/*
+
+{
+	"id": "sfseiw342342343",
+	"username" : "samuael adnew "
+}
+
+*/
 
 // OutMessage is a class representing all the data to be sent out to the client through the connections
 // NOTE : All client connections should have a common Format to be accepted by the client connection.
@@ -81,21 +106,30 @@ type ClientEchoMessage struct {
 	// Seen    bool   `json:"seen"`
 }
 
+/*
+	{ "msg": "" }
+*/
+
 // ServerEchoMessage represernts the servers echo message reply.
 // I have separated those two messages because we may have
 // some thing different to be included in the two message bodies.
 type ServerEchoMessage struct {
-	ClientID string `json:"client_id"` // client id represents id of the client.
+	ClientID string `json:"client_id,omitempty"` // client id represents id of the client.
 	// Seen     bool   `json:"seen"`      //`
 	Message string `json:"msg"`
 }
 
+/*
+	{
+		"client_id" : ""
+		"msg" : " The message ...  "
+	}
+*/
 // Client a class representing application clients.
 type Client struct {
 	Username string
 	ID       string
-	// Conn     *websocket.Conn
-	// Message  chan *OutMessage
+	// Reference to the Server instance for passing message through the channels.
 	Server *Server
 	// map of string to Device
 	// the key represents the newly generated ID which is same as that of IP String in the device instance.
@@ -111,7 +145,7 @@ type Client struct {
 type Device struct {
 	// Uniquely Identifying a device  ..
 	// the IP is a symbol for IP address , but we can use other signatures to differentiate each device uniquely
-	// For example it may be MAC ADDRESS , IP Address , or Randomly Generated Address to Uniquly Identify the Device.
+	// For example it may be MAC ADDRESS ,IP Address,or Randomly Generated Address to Uniquly Identify the Device.
 	// a dynamically generated strin to represent each device.
 	IP string
 	// Conn : web socket connection created by the device
@@ -124,6 +158,6 @@ type Device struct {
 type UniqueAddress struct {
 	// ID the id of the client instance.
 	ID string //
-	// IP the IP Address of the device (  in our case a randmly generated address. )
+	// IP the  Address of the device (  in our case a randmly generated address. )
 	IP string
 }
