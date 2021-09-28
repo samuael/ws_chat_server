@@ -15,7 +15,7 @@ func main() {
 	// Determine port for HTTP service.
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "80"
+		port = "8070"
 		log.Printf("defaulting to PORT %s", port)
 	}
 	broadcast := &BroadcastChat{
