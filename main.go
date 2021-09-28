@@ -35,7 +35,7 @@ func main() {
 	http.Handle("/ws/", wshandler)
 	http.HandleFunc("/api/messages/", broadcast.GetListOfMessages)
 	http.HandleFunc("/api/users/", broadcast.GetUsers)
-	http.ListenAndServe(":"+port, nil)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
 // Server representing the single point fo failure for handling client registration
