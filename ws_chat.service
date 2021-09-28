@@ -5,7 +5,7 @@ Description=goweb
 Type=simple
 Restart=always
 RestartSec=5s
-ExecStart=/home/nathy/go/src/github.com/samuael/Project/ws_chat/ws_chat
+ExecStart=/home/usman_sardar/code/ws_chat
 
 [Install]
 WantedBy=multi-user.target
