@@ -157,6 +157,7 @@ func (server *Server) UnRegisterClient(ID, IP string) {
 		// since teh length of device is 1 or less unregistering that device is also Unregistering the clinet instance.
 		if len(client.Devices) == 0 && (len(client.Devices) == 1 && client.Devices[IP] != nil) {
 			delete(Clients, ID)
+			delete(server.BroadcastChat.Users, ID)
 		}
 	}
 }

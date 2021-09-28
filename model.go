@@ -45,11 +45,11 @@ type XChangeMessage struct {
 // When the Type (Status ) code of XChangeMessage is BroadcastMessageType==3 ,
 //  then the body will be an instance of this struct.
 type BroadcastMessage struct {
-	No       int       `bson:"no"  	  json:"no"`
-	ID       string    `bson:"_id"  	  json:"id"`
-	Username string    `bson:"username"  json:"username"`
-	Message  string    `bson:"msg"  	  json:"msg"`
-	Time     time.Time `bson:"time"  	  json:"time"`
+	No       int       `bson:"no"  	     json:  "no"`
+	ID       string    `bson:"_id"  	 json:  "id"`
+	Username string    `bson:"username"  json:  "username"`
+	Message  string    `bson:"msg"  	  json: "msg"`
+	Time     time.Time `bson:"time"  	  json: "time"`
 }
 
 /*
