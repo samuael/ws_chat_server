@@ -65,8 +65,9 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		IP:      ip,
 		Message: make(chan *OutMessage)}
 	client := &Client{
-		Username: username,
-		ID:       id,
+		Username:         username,
+		ID:               id,
+		BroadcastHandler: server.BroadcastChat,
 		// Conn:     conn,
 		// Message:  make(chan *OutMessage),
 		Devices: map[string]*Device{ip: device},
