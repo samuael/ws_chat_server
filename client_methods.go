@@ -47,7 +47,7 @@ func (client *Client) ReadMessage(IP string) {
 		err := client.Devices[IP].Conn.ReadJSON(message)
 		if err != nil {
 			log.Println("ERROR : ", err.Error())
-			if websocket.IsUnexpectedCloseError(err, 1006, websocket.CloseInternalServerErr, websocket.CloseMessage) {
+			if websocket.IsUnexpectedCloseError(err, 1006, websocket.CloseGoingAway, websocket.CloseProtocolError, websocket.CloseUnsupportedData, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure, websocket.CloseInvalidFramePayloadData, websocket.ClosePolicyViolation, websocket.CloseMessageTooBig, websocket.CloseMandatoryExtension, websocket.CloseInternalServerErr, websocket.CloseServiceRestart, websocket.CloseTryAgainLater, websocket.CloseTLSHandshake) {
 				return
 			}
 			continue
