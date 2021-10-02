@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -34,8 +35,7 @@ func (client *Client) ReadMessage(IP string) {
 			// Main service will close teh closed connection and let the rest.
 			return nil
 		})
-	/*
-		Using this method below named SetReadDeadLine you  can set the maximum time to wait before the next message arrives or sent.
+	/*	Using this method below named SetReadDeadLine you  can set the maximum time to wait before the next message arrives or sent.
 		the diration is set using the pong wait variable.
 	*/
 	// client.Devices[IP].Conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -46,8 +46,8 @@ func (client *Client) ReadMessage(IP string) {
 		message := &XChangeMessage{}
 		err := client.Devices[IP].Conn.ReadJSON(message)
 		if err != nil {
-			println("ERROR : ", err.Error())
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseInternalServerErr, websocket.CloseMessage) {
+			log.Println("ERROR : ", err.Error())
+			if websocket.IsUnexpectedCloseError(err, 1006, websocket.CloseInternalServerErr, websocket.CloseMessage) {
 				return
 			}
 			continue
@@ -97,6 +97,7 @@ func (client *Client) ReadMessage(IP string) {
 				client.BroadcastHandler.LastMessageNumber++
 				body := &BroadcastMessage{Username: client.Username, ID: client.ID, Time: time.Now(), No: client.BroadcastHandler.LastMessageNumber}
 				client.BroadcastHandler.Messages = append(client.BroadcastHandler.Messages, *body)
+				body.Message = msg
 				client.BroadcastHandler.Users[client.ID] = client
 				message.Body = body
 				/*
