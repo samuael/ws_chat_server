@@ -47,10 +47,10 @@ func (client *Client) ReadMessage(IP string) {
 		err := client.Devices[IP].Conn.ReadJSON(message)
 		if err != nil {
 			println("ERROR : ", err.Error())
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseInternalServerErr, websocket.CloseMandatoryExtension, websocket.CloseMessage, websocket.CloseProtocolError, websocket.CloseUnsupportedData) {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseInternalServerErr, websocket.CloseMessage) {
 				return
 			}
-			break
+			continue
 		}
 		if message == nil || message.Body == nil {
 			continue
