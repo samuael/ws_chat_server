@@ -114,7 +114,7 @@ type ClientEchoMessage struct {
 // I have separated those two messages because we may have
 // some thing different to be included in the two message bodies.
 type ServerEchoMessage struct {
-	ClientID string `json:"client_id,omitempty"` // client id represents id of the client.
+	ClientID string `json:"client_id"` // client id represents id of the client.
 	// Seen     bool   `json:"seen"`      //`
 	Message string `json:"msg"`
 }
