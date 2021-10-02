@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var Clients map[string]*Client
@@ -24,9 +25,9 @@ func main() {
 		Users:             map[string]*Client{},
 	}
 	server := Server{
-		Register:      make(chan *Client),
+		Register:      make(chan Client),
 		Remove:        make(chan UniqueAddress),
-		Message:       make(chan *XChangeMessage),
+		Message:       make(chan XChangeMessage),
 		BroadcastChat: broadcast,
 	}
 	// Start a the main service handler function.
@@ -42,9 +43,9 @@ func main() {
 // deletion and closing of their web socket connection and message forwarding.
 type Server struct {
 	// This server will be the only one which will have an access to Clients clice.
-	Register      chan *Client // This method of Server client handling is used for dead lock prevention.
+	Register      chan Client // This method of Server client handling is used for dead lock prevention.
 	Remove        chan UniqueAddress
-	Message       chan *XChangeMessage
+	Message       chan XChangeMessage
 	BroadcastChat *BroadcastChat
 }
 
@@ -52,7 +53,7 @@ type Server struct {
 //
 func (server *Server) Handle() {
 	// Use this ticker if you want to check any thing related this server and it connectins.
-	// ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Second * 10)
 	defer func() {
 		// ticker.Stop()
 		recover()
@@ -82,18 +83,21 @@ func (server *Server) Handle() {
 			}
 		case uniqueAddress := <-server.Remove:
 			{
+				log.Println(" ERROR COMES TO HERE ", "Remove")
 				server.UnRegisterClient(uniqueAddress.ID, uniqueAddress.IP)
+				log.Println("Finished ........")
 			}
-			/* case <-ticker.C: 	{
-				log.Println(len(Clients))
-			} */
+		case <-ticker.C:
+			{
+				log.Println(time.Now().String(), len(Clients))
+			}
 		}
 	}
 }
 
 // SendMessage : this function send a message depending on the message type.
 // for example if the mesage type is group message then broadcast the message and if it is end to end it will send the message to target device.
-func (server *Server) SendMessage(message *XChangeMessage) {
+func (server *Server) SendMessage(message XChangeMessage) {
 	defer func() {
 		message := recover()
 		if message != nil {
@@ -123,7 +127,13 @@ func (server *Server) SendMessage(message *XChangeMessage) {
 
 // RegisterClient : this method adds the newly connected device to the map of client in this application
 // if device with same id is already registered, then this function adds the client's Device to the list of existing devices.
-func (server *Server) RegisterClient(client *Client) {
+func (server *Server) RegisterClient(client Client) {
+	defer func() {
+		mess := recover()
+		if mess != nil {
+			log.Println(string(MarshalThis(mess)))
+		}
+	}()
 	// check whether the client is available or not.
 	// if so append the device in teh client devices list else use this newly generated client instance.
 	if clnt := Clients[client.ID]; clnt != nil {
@@ -134,7 +144,7 @@ func (server *Server) RegisterClient(client *Client) {
 		}
 	} else {
 		// Just use the newly Created Client Instance.
-		Clients[client.ID] = client
+		Clients[client.ID] = &client
 	}
 
 }
@@ -143,6 +153,9 @@ func (server *Server) RegisterClient(client *Client) {
 // This funciton takes an argument of client's ID and clients IP address.
 // ID to identify the client object and IP to identify the Device of the client.
 func (server *Server) UnRegisterClient(ID, IP string) {
+	defer func() {
+		recover()
+	}()
 	// When we want to unregister the client we need to pass this two parameters to the server inside the UniqueAddress instance with the Unregister
 	// channel and the main server filters the client object with this id and a device with thsi id to delete the device if there are
 	// a number of active devices connected using this id. but , if the number of connected devices is only one , then the client object will be deleted too.
@@ -155,7 +168,7 @@ func (server *Server) UnRegisterClient(ID, IP string) {
 		delete(client.Devices, IP)
 	} else if client != nil && len(client.Devices) <= 1 {
 		// since teh length of device is 1 or less unregistering that device is also Unregistering the clinet instance.
-		if len(client.Devices) == 0 && (len(client.Devices) == 1 && client.Devices[IP] != nil) {
+		if len(client.Devices) == 0 || (len(client.Devices) == 1 && client.Devices[IP] != nil) {
 			delete(Clients, ID)
 			delete(server.BroadcastChat.Users, ID)
 		}

@@ -41,7 +41,7 @@ func MarshalThis(inter interface{}) []byte {
 // ServeHTTP a handler function to create a socket connection with the client and to create a Client instance
 // which holds the socket client connection  instance and thre related information related to the client it may be either a username an ID
 // or IP address and related information.
-func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+func (server Server) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	conn, er := upgrader.Upgrade(response, request, nil)
 	if er != nil {
 		println("Error Upgrading Web Socket ")
@@ -64,14 +64,14 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		Conn:    conn,
 		IP:      ip,
 		Message: make(chan *OutMessage)}
-	client := &Client{
+	client := Client{
 		Username:         username,
 		ID:               id,
 		BroadcastHandler: server.BroadcastChat,
 		// Conn:     conn,
 		// Message:  make(chan *OutMessage),
 		Devices: map[string]*Device{ip: device},
-		Server:  server,
+		Server:  &server,
 	}
 	server.Register <- client
 	go client.ReadMessage(ip)

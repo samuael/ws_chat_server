@@ -11,14 +11,12 @@ import (
 // the socket connection between the client and the server is closed.
 func (client *Client) ReadMessage(IP string) {
 	defer func() {
-		if client.Devices[IP].Conn != nil {
-			client.Devices[IP].Conn.Close()
-			client.Server.Remove <- UniqueAddress{IP: IP, ID: client.ID}
-		}
 		message := recover()
 		if message != nil {
 			println("Write ", IP, string(MarshalThis(message)))
 		}
+		client.Server.Remove <- UniqueAddress{IP: IP, ID: client.ID}
+		log.Println("Recovered")
 	}()
 	// This is the packages message ...
 	// SetReadLimit sets the maximum size in bytes for a message read from the peer.
@@ -48,7 +46,12 @@ func (client *Client) ReadMessage(IP string) {
 		if err != nil {
 			log.Println("ERROR : ", err.Error())
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				return
+				if client.Devices[IP].Conn != nil {
+					client.Devices[IP].Conn.Close()
+				}
+				log.Println("Leaving")
+				break
+
 			}
 			continue
 		}
@@ -75,10 +78,10 @@ func (client *Client) ReadMessage(IP string) {
 				// Here I am Sending the client with the server echo message .
 				serverMessage.Body = &ServerEchoMessage{ClientID: client.ID, Message: "\nYou Said '" + body.Message + "'"}
 				serverMessage.Type = EndToEndServerReply
-				client.Server.Message <- message
+				client.Server.Message <- *message
 				time.Sleep(time.Second * 1)
 				// println("Before sending ... ")
-				client.Server.Message <- serverMessage
+				client.Server.Message <- *serverMessage
 			}
 		} else if message.Type == BroadcastMessageType {
 			// When the message is a broadcast message ...
@@ -103,7 +106,7 @@ func (client *Client) ReadMessage(IP string) {
 				/*
 					Before Sending the message we need to add the broadcast message to the list of broadcast messages in the BroadcastChat Instance.
 				*/
-				client.Server.Message <- message
+				client.Server.Message <- *message
 				time.Sleep(time.Millisecond * 30)
 			}
 		} else if message.Type == BroadcastStopTypingMessage || message.Type == BroadcastTypingMessage {
@@ -112,7 +115,7 @@ func (client *Client) ReadMessage(IP string) {
 				// Instantiating the Broadcast Typign message and pass it to the Xcahnge message..
 				body := &BroadcastTyping{Username: client.Username, ID: client.ID}
 				message.Body = body
-				client.Server.Message <- message
+				client.Server.Message <- *message
 				time.Sleep(time.Millisecond * 30)
 			}
 		}
@@ -122,9 +125,6 @@ func (client *Client) ReadMessage(IP string) {
 func (client *Client) WriteMessage(IP string) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer func() {
-		if client.Devices[IP] != nil && client.Devices[IP].Conn != nil {
-			client.Devices[IP].Conn.Close()
-		}
 		client.Server.Remove <- UniqueAddress{IP: IP, ID: client.ID}
 		message := recover()
 		if message != nil {
